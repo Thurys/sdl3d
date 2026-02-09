@@ -16,8 +16,8 @@ struct Point {
 impl Point {
     fn to_screen(&self, w: u32, h: u32) -> (i32, i32) {
         (
-            (((self.x / self.z + 1.0) / 2.0) * w as f64).round() as i32,
-            ((1.0 - (self.y / self.z + 1.0) / 2.0) * h as f64).round() as i32,
+            (((self.x / self.z) + 1.0) / 2.0 * w as f64).round() as i32,
+            ((1.0 - ((self.y / self.z) + 1.0) / 2.0) * h as f64).round() as i32,
         )
     }
 }
@@ -104,23 +104,24 @@ pub fn main() {
         let mut rects = Vec::new();
 
         if points.iter().all(|r| r.z.abs() >= 2.5) {
-            zoom_out = false;
+            zoom_out = !zoom_out;
         } else if points.iter().all(|r| r.z.abs() <= 0.25) {
-            zoom_out = true;
+            zoom_out = !zoom_out;
         }
 
         points.iter_mut().for_each(|point| {
             if zoom_out {
-                point.z -= move_speed;
-            } else {
                 point.z += move_speed;
+            } else {
+                point.z -= move_speed;
             }
             let point_to_screen = point.to_screen(win_w, win_h);
-            rects.push(Rect::new(point_to_screen.0, point_to_screen.1, point_size, point_size));
-            // println!(
-            //     "Point at ({:.2}, {:.2}, {:.2}) projected to ({}, {})",
-            //     point.x, point.y, point.z, point_to_screen.0, point_to_screen.1
-            // );
+            rects.push(Rect::new(
+                point_to_screen.0,
+                point_to_screen.1,
+                point_size,
+                point_size,
+            ));
         });
         rects.iter().for_each(|rect| {
             canvas.fill_rect(*rect).unwrap();
