@@ -14,16 +14,10 @@ struct Point {
 }
 
 impl Point {
-    fn project(&mut self, w: u32, h: u32) -> &Self {
-        self.x = self.x / self.z * w as f64;
-        self.y = self.y / self.z * h as f64;
-        self
-    }
-
     fn to_screen(&self, w: u32, h: u32) -> (i32, i32) {
         (
-            ((self.x + 1.0) / 2.0 * w as f64).round() as i32,
-            ((self.y + 1.0) / 2.0 * h as f64).round() as i32,
+            (((self.x / self.z + 1.0) / 2.0) * w as f64).round() as i32,
+            ((1.0 - (self.y / self.z + 1.0) / 2.0) * h as f64).round() as i32,
         )
     }
 }
@@ -35,8 +29,8 @@ pub fn main() {
     let fg_color = Color::RGB(40, 255, 40);
     let win_w = 800;
     let win_h = 600;
-    let move_speed = 5;
-    let point_size = 10;
+    let move_speed = 1.0 / 60.0;
+    let point_size = 2;
 
     let window = video_subsystem
         .window("rust-sdl3 demo", win_w, win_h)
@@ -44,17 +38,53 @@ pub fn main() {
         .build()
         .unwrap();
     let mut canvas = window.into_canvas();
-    let mut point = Point {
-        x: 0.0,
-        y: 0.0,
-        z: 1.0,
-    };
-    let mut i: f64 = 0.0;
-    let mut j: f64 = 0.0;
-    let mut point_to_screen = point.to_screen(win_w, win_h);
-    let mut rect = Rect::new(point_to_screen.0, point_to_screen.1, point_size, point_size);
+    let mut points = [
+        Point {
+            x: 0.25,
+            y: 0.25,
+            z: -0.25,
+        },
+        Point {
+            x: 0.25,
+            y: -0.25,
+            z: -0.25,
+        },
+        Point {
+            x: -0.25,
+            y: 0.25,
+            z: -0.25,
+        },
+        Point {
+            x: -0.25,
+            y: -0.25,
+            z: -0.25,
+        },
+        Point {
+            x: 0.25,
+            y: 0.25,
+            z: 0.25,
+        },
+        Point {
+            x: 0.25,
+            y: -0.25,
+            z: 0.25,
+        },
+        Point {
+            x: -0.25,
+            y: 0.25,
+            z: 0.25,
+        },
+        Point {
+            x: -0.25,
+            y: -0.25,
+            z: 0.25,
+        },
+    ];
 
     let mut event_pump = sdl_context.event_pump().unwrap();
+
+    let mut zoom_out = true;
+
     'running: loop {
         for event in event_pump.poll_iter() {
             match event {
@@ -67,17 +97,35 @@ pub fn main() {
             }
         }
         // The rest of the game loop goes here...
-        // i = (i + move_speed) % win_w as i32;
-        // j = (j + move_speed) % win_h as i32;
-
         canvas.set_draw_color(bg_color);
         canvas.clear();
         canvas.set_draw_color(fg_color);
-        point_to_screen = point.to_screen(win_w, win_h);
-        rect.set_x(point_to_screen.0);
-        rect.set_y(point_to_screen.1);
 
-        canvas.fill_rect(rect).unwrap();
+        let mut rects = Vec::new();
+
+        if points.iter().all(|r| r.z.abs() >= 2.5) {
+            zoom_out = false;
+        } else if points.iter().all(|r| r.z.abs() <= 0.25) {
+            zoom_out = true;
+        }
+
+        points.iter_mut().for_each(|point| {
+            if zoom_out {
+                point.z -= move_speed;
+            } else {
+                point.z += move_speed;
+            }
+            let point_to_screen = point.to_screen(win_w, win_h);
+            rects.push(Rect::new(point_to_screen.0, point_to_screen.1, point_size, point_size));
+            // println!(
+            //     "Point at ({:.2}, {:.2}, {:.2}) projected to ({}, {})",
+            //     point.x, point.y, point.z, point_to_screen.0, point_to_screen.1
+            // );
+        });
+        rects.iter().for_each(|rect| {
+            canvas.fill_rect(*rect).unwrap();
+        });
+
         canvas.present();
         ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
     }
