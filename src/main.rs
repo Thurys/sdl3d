@@ -16,8 +16,8 @@ struct Point {
 impl Point {
     fn to_screen(&self, w: u32, h: u32) -> (i32, i32) {
         (
-            (((self.x / self.z) + 1.0) / 2.0 * w as f64).round() as i32,
-            ((1.0 - ((self.y / self.z) + 1.0) / 2.0) * h as f64).round() as i32,
+            (((self.x / (self.z + 1.0)) + 1.0) / 2.0 * w as f64).round() as i32,
+            ((1.0 - ((self.y / (self.z + 1.0)) + 1.0) / 2.0) * h as f64).round() as i32,
         )
     }
 }
@@ -29,7 +29,8 @@ pub fn main() {
     let fg_color = Color::RGB(40, 255, 40);
     let win_w = 800;
     let win_h = 600;
-    let move_speed = 1.0 / 60.0;
+    // let move_speed = 1.0 / 60.0;
+    let move_speed = 0.01;
     let point_size = 2;
 
     let window = video_subsystem
@@ -103,10 +104,10 @@ pub fn main() {
 
         let mut rects = Vec::new();
 
-        if points.iter().all(|r| r.z.abs() >= 2.5) {
-            zoom_out = !zoom_out;
-        } else if points.iter().all(|r| r.z.abs() <= 0.25) {
-            zoom_out = !zoom_out;
+        if points.iter().all(|p| p.z.abs() >= 2.25 && zoom_out) {
+            zoom_out = false;
+        } else if points.iter().all(|p| p.z <= 0.25 && !zoom_out) {
+            zoom_out = true;
         }
 
         points.iter_mut().for_each(|point| {
