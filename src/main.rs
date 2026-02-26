@@ -57,11 +57,8 @@ pub fn main() {
     let zoom_enabled = true;
     let rotation_angle = 0.01;
 
-    let window = video_subsystem
-        .window("rust-sdl3 demo", win_w, win_h)
-        .position_centered()
-        .build()
-        .unwrap();
+    let window =
+        video_subsystem.window("rust-sdl3 demo", win_w, win_h).position_centered().build().unwrap();
     let mut canvas = window.into_canvas();
     let original_points = [
         Point {
@@ -112,12 +109,14 @@ pub fn main() {
     let mut zoom_out = true;
     let mut current_rotation_x = 0.0;
     let mut current_rotation_y = 0.0;
-    let mut fpoints = Vec::new();
+    let mut fpoints = Vec::with_capacity(original_points.len());
 
     'running: loop {
         for event in event_pump.poll_iter() {
             match event {
-                Event::Quit { .. }
+                Event::Quit {
+                    ..
+                }
                 | Event::KeyDown {
                     keycode: Some(Keycode::Escape),
                     ..
@@ -160,10 +159,7 @@ pub fn main() {
             point.z += zoom_offset;
 
             let point_to_screen = point.to_screen(win_w, win_h);
-            fpoints.push(FPoint::new(
-                point_to_screen.0 as f32,
-                point_to_screen.1 as f32,
-            ));
+            fpoints.push(FPoint::new(point_to_screen.0 as f32, point_to_screen.1 as f32));
         }
 
         // canvas.draw_points(fpoints.as_slice()).unwrap();
